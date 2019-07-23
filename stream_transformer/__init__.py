@@ -1,0 +1,1 @@
+from stream_transformer.stream_file_transformer import StreamFileMapper
