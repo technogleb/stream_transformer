@@ -20,3 +20,5 @@ mapper = StreamFileMapper(
 
 mapper.map()
 ```
+
+* you can use generate_file.sh script to generate large file out of your sample file.txt
