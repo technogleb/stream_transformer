@@ -21,13 +21,17 @@ class StreamFileMapper:
 
     @property
     def file_size(self):
-        bytes_len = subprocess.check_output(['stat', '--printf="%s"', self.path])
-        return int(bytes_len.decode('utf-8')[1:-1])
+        output = subprocess.check_output(['wc', '-c', self.path])
+        pattern = re.compile(b'\d+')
+        bytes_len = int(pattern.search(output).group())
+        return bytes_len
 
     @property
     def num_lines(self):
-        bytes_len = subprocess.check_output(['wc', '-l', self.path])
-        return int(bytes_len.decode('utf-8')[0:-1].split(' ')[0])
+        output = subprocess.check_output(['wc', '-l', self.path])
+        pattern = re.compile(b'\d+')
+        num_lines = int(pattern.search(output).group())
+        return num_lines
 
     def _read_file_in_stream(self, f):
         while True:
@@ -96,9 +100,12 @@ class StreamFileMapper:
 
 if __name__ == "__main__":
     """Example usage"""
+
+    mapper_target = lambda x: 'I am replaced string'
+
     mapper = StreamFileMapper(
-        path="path/to/my/big/file.ext",
-        target="my_mapper_funcion",
+        path="../data/file.txt",
+        target=mapper_target,
         n_jobs=10,
         line_by_line=True,
         keep_orig_file=False
