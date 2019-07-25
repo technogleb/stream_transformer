@@ -21,16 +21,16 @@ class StreamFileMapper:
 
     @property
     def file_size(self):
-        output = subprocess.check_output(['wc', '-c', self.path])
+        stdout = subprocess.check_output(['wc', '-c', self.path])
         pattern = re.compile(b'\d+')
-        bytes_len = int(pattern.search(output).group())
+        bytes_len = int(pattern.search(stdout).group())
         return bytes_len
 
     @property
     def num_lines(self):
-        output = subprocess.check_output(['wc', '-l', self.path])
+        stdout = subprocess.check_output(['wc', '-l', self.path])
         pattern = re.compile(b'\d+')
-        num_lines = int(pattern.search(output).group())
+        num_lines = int(pattern.search(stdout).group())
         return num_lines
 
     def _read_file_in_stream(self, f):
@@ -101,7 +101,8 @@ class StreamFileMapper:
 if __name__ == "__main__":
     """Example usage"""
 
-    mapper_target = lambda x: 'I am replaced string'
+    def mapper_target(x):
+        return 'I am replaced string'
 
     mapper = StreamFileMapper(
         path="../data/file.txt",
