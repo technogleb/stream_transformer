@@ -81,7 +81,7 @@ class StreamFileMapper:
 
     def _clean_garbage(self):
         for f in os.listdir(self.f_head):
-            if re.search('.{}'.format(self.f_body), f):
+            if re.match('.{}'.format(self.f_body), f):
                 os.remove(os.path.join(self.f_head, f))
 
     def map(self):
