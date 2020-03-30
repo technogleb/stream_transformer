@@ -1,22 +1,20 @@
 """This module implements StreamFileMapper class for filtering big files in a stream"""
 
+from pathlib import Path
 import os
 import multiprocessing
 import subprocess
-import glob
 import re
 
 
 class StreamFileMapper:
     def __init__(self, path, target, chunk_size=1024,
                  n_jobs=1, line_by_line=False, keep_orig_file=True):
-        self.path = path
+        self.path = Path(path)
         self.target = target
         self.chunk_size = chunk_size
         self.n_jobs = n_jobs
         self.line_by_line = line_by_line
-        self.f_head, self.f_tail = os.path.split(self.path)
-        self.f_body, self.f_ext = os.path.splitext(self.f_tail)
         self.keep_orig_file = keep_orig_file
 
     @property
@@ -47,7 +45,7 @@ class StreamFileMapper:
         else:
             split_size = self.file_size // self.n_jobs + 1
 
-        output_prefix = os.path.join(self.f_head, '.' + self.f_body)
+        output_prefix = self.path.parent / ('.' + self.path.stem)
 
         subprocess.check_call([
             'split',
@@ -61,7 +59,7 @@ class StreamFileMapper:
         if not self.keep_orig_file:
             subprocess.Popen(['rm', self.path])
 
-        splited_fnames = glob.glob(os.path.join(self.f_head, '.{}*'.format(self.f_body)))
+        splited_fnames = self.path.parent.glob('.{}*'.format(self.path.stem))
 
         return splited_fnames
 
@@ -73,27 +71,27 @@ class StreamFileMapper:
             yield self._process_chunk(chunk)
 
     def _open_process_save(self, filename):
-        filename_copy = filename+'_processed'
+        filename_copy = Path(filename.stem + '_processed')
         with open(filename, 'r') as f, open(filename_copy, 'a+') as f_copy:
             for processed_chunk in self._process_file_in_stream(f):
                 f_copy.write(processed_chunk)
         return filename_copy
 
     def _clean_garbage(self):
-        for f in os.listdir(self.f_head):
-            if re.match('.{}'.format(self.f_body), f):
-                os.remove(os.path.join(self.f_head, f))
+        for f in self.path.parent.iterdir():
+            if re.search('.{}'.format(self.path.stem), str(f)):
+                (self.path.parent / f).unlink()
 
     def map(self):
         splited_fnames = self._split_file()
         with multiprocessing.Pool(self.n_jobs) as P:
             splited_fnames_processed = P.map(self._open_process_save, splited_fnames)
 
-        output_file = os.path.join(self.f_head, self.f_body + '_processed' + self.f_ext)
+        output_file = self.path.parent / (self.path.stem + '_processed' + self.path.suffix)
         subprocess.check_call(['touch', output_file])
 
         subprocess.check_call(
-            ' '.join(['cat', *splited_fnames_processed, '>>', output_file]), shell=True)
+            ' '.join(['cat', *map(str, splited_fnames_processed), '>>', str(output_file)]), shell=True)
 
         self._clean_garbage()
 
